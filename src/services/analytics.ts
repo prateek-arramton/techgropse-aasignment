@@ -1,58 +1,74 @@
 import redis from "../config/redis";
-import { transactions } from "../data/store";
+import { CACHE_KEYS } from "../constants/cache";
+import { transactions } from "../constants/store";
+import logger from "../lib/logger";
+import { sleep } from "../lib/utils";
 
-const CACHE_KEY = "analytics:summary";
-const LOCK_KEY = "analytics:summary:lock";
+
 const CACHE_TTL = Number(process.env.CACHE_TTL) || 60;
 
-const sleep = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
-
 export const getAnalyticsSummary = async () => {
-
-  const cached = await redis.get(CACHE_KEY);
+  const cached = await redis.get(CACHE_KEYS.ANALYTICS_SUMMARY);
 
   if (cached) {
-    console.log("Cache Hit");
+    logger.info("Analytics cache hit.");
     return JSON.parse(cached);
   }
 
-  console.log("Cache Miss");
+  logger.info("Analytics cache miss.");
 
-
-  const lock = await redis.set(LOCK_KEY, "locked", "EX", 5, "NX");
+  const lock = await redis.set(
+    CACHE_KEYS.ANALYTICS_SUMMARY_LOCK,
+    "locked",
+    "EX",
+    5,
+    "NX"
+  );
 
   if (!lock) {
+    logger.info("Waiting for analytics cache to be populated.");
+
     while (true) {
       await sleep(100);
 
-      const cachedData = await redis.get(CACHE_KEY);
+      const cachedData = await redis.get(CACHE_KEYS.ANALYTICS_SUMMARY);
 
       if (cachedData) {
-        console.log("Waited for cache.");
+        logger.info("Analytics cache became available.");
         return JSON.parse(cachedData);
       }
     }
   }
 
   try {
+    logger.info("Generating analytics summary...");
+
     // Simulate slow database query
     await sleep(2000);
 
-    let totalVolume = 0;
+    const { totalProcessedVolume, userVolumes } = Array.from(
+      transactions.values()
+    ).reduce(
+      (acc, transaction) => {
+        if (transaction.status !== "COMPLETED") {
+          return acc;
+        }
 
-    const userVolumes = new Map<string, number>();
+        acc.totalProcessedVolume += transaction.amount;
 
-    for (const transaction of transactions.values()) {
-      if (transaction.status !== "COMPLETED") continue;
+        acc.userVolumes.set(
+          transaction.userId,
+          (acc.userVolumes.get(transaction.userId) ?? 0) +
+            transaction.amount
+        );
 
-      totalVolume += transaction.amount;
-
-      userVolumes.set(
-        transaction.userId,
-        (userVolumes.get(transaction.userId) || 0) + transaction.amount
-      );
-    }
+        return acc;
+      },
+      {
+        totalProcessedVolume: 0,
+        userVolumes: new Map<string, number>(),
+      }
+    );
 
     const topUsers = [...userVolumes.entries()]
       .sort((a, b) => b[1] - a[1])
@@ -63,20 +79,22 @@ export const getAnalyticsSummary = async () => {
       }));
 
     const summary = {
-      totalProcessedVolume: totalVolume,
+      totalProcessedVolume,
       topUsers,
       generatedAt: new Date().toISOString(),
     };
 
     await redis.set(
-      CACHE_KEY,
+      CACHE_KEYS.ANALYTICS_SUMMARY,
       JSON.stringify(summary),
       "EX",
       CACHE_TTL
     );
 
+    logger.info("Analytics summary cached successfully.");
+
     return summary;
   } finally {
-    await redis.del(LOCK_KEY);
+    await redis.del(CACHE_KEYS.ANALYTICS_SUMMARY_LOCK);
   }
 };

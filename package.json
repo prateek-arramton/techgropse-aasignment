@@ -18,7 +18,8 @@
     "ioredis": "^5.11.1",
     "knex": "^3.3.0",
     "mysql2": "^3.22.5",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",

@@ -1,12 +1,12 @@
-import { Transaction } from "../data/store";
+import { Transaction } from "../constants/store";
 import {
   users,
   transactions,
   processedTransactions,
-} from "../data/store";
+} from "../constants/store";
 
-const sleep = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+import logger from "../lib/logger";
+import { sleep } from "../lib/utils";
 
 interface ProcessTransactionPayload {
   id: string;
@@ -26,24 +26,39 @@ export const processTransaction = async (
 
   // Idempotency check
   if (processedTransactions.has(id)) {
-    console.log(`Transaction ${id} already processed.`);
+    logger.warn("Duplicate transaction received. Skipping processing.", {
+      transactionId: id,
+      userId,
+    });
+
     return;
   }
 
   const user = users.get(userId);
 
   if (!user) {
+    logger.error("User not found.", {
+      transactionId: id,
+      userId,
+    });
+
     throw new Error("User not found.");
   }
 
   if (user.walletBalance < amount) {
+    logger.error("Insufficient wallet balance.", {
+      transactionId: id,
+      userId,
+      balance: user.walletBalance,
+      requestedAmount: amount,
+    });
+
     throw new Error("Insufficient wallet balance.");
   }
 
- 
   try {
+    // Debit wallet
     user.walletBalance -= amount;
-
     users.set(userId, user);
 
     const transaction: Transaction = {
@@ -59,13 +74,25 @@ export const processTransaction = async (
 
     processedTransactions.add(id);
 
-    console.log(`Transaction ${id} processed successfully.`);
+    logger.info("Transaction processed successfully.", {
+      transactionId: id,
+      userId,
+      amount,
+      currency,
+    });
   } catch (error) {
     // Rollback
     user.walletBalance += amount;
     users.set(userId, user);
 
     transactions.delete(id);
+
+    logger.error("Transaction processing failed. Rolled back changes.", {
+      transactionId: id,
+      userId,
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
 
     throw error;
   }

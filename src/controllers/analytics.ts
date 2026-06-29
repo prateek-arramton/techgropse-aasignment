@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { getAnalyticsSummary } from "../services/analytics";
+import logger from "../lib/logger";
+import { successResponse, errorResponse } from "../lib/response";
 
 export const analyticsSummary = async (
   req: Request,
@@ -8,16 +10,24 @@ export const analyticsSummary = async (
   try {
     const summary = await getAnalyticsSummary();
 
-    res.status(200).json({
-      success: true,
-      data: summary,
-    });
-  } catch (error) {
-    console.error(error);
+    logger.info("Analytics summary fetched successfully.");
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch analytics summary.",
+    successResponse(
+      res,
+      200,
+      "Analytics summary fetched successfully.",
+      summary
+    );
+  } catch (error) {
+    logger.error("Failed to fetch analytics summary.", {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
     });
+
+    errorResponse(
+      res,
+      500,
+      "Failed to fetch analytics summary."
+    );
   }
 };
