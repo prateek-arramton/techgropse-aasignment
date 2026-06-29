@@ -1,0 +1,154 @@
+{
+  "info": {
+    "name": "Transaction Queue System",
+    "_postman_id": "7d7f0f3d-b2d0-4b7f-8c6f-123456789abc",
+    "description": "Machine Test APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Queue Transaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"id\": \"tx001\",\n    \"userId\": \"user1\",\n    \"amount\": 500,\n    \"currency\": \"INR\",\n    \"timestamp\": \"2026-06-29T18:00:00Z\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "transactions"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Duplicate Transaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"id\": \"tx001\",\n    \"userId\": \"user1\",\n    \"amount\": 500,\n    \"currency\": \"INR\",\n    \"timestamp\": \"2026-06-29T18:00:00Z\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "transactions"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Invalid User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"id\": \"tx002\",\n    \"userId\": \"unknown\",\n    \"amount\": 500,\n    \"currency\": \"INR\",\n    \"timestamp\": \"2026-06-29T18:00:00Z\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "transactions"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Insufficient Balance",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"id\": \"tx003\",\n    \"userId\": \"user1\",\n    \"amount\": 999999,\n    \"currency\": \"INR\",\n    \"timestamp\": \"2026-06-29T18:00:00Z\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "transactions"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Analytics Summary",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/analytics/summary",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "analytics",
+            "summary"
+          ]
+        }
+      }
+    }
+  ]
+}
