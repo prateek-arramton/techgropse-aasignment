@@ -9,7 +9,7 @@ const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 export const getAnalyticsSummary = async () => {
-  // 1. Check Cache
+
   const cached = await redis.get(CACHE_KEY);
 
   if (cached) {
@@ -19,11 +19,10 @@ export const getAnalyticsSummary = async () => {
 
   console.log("Cache Miss");
 
-  // 2. Acquire Lock (Cache Stampede Protection)
+
   const lock = await redis.set(LOCK_KEY, "locked", "EX", 5, "NX");
 
   if (!lock) {
-    // Someone else is generating the cache
     while (true) {
       await sleep(100);
 

@@ -19,6 +19,7 @@ const transactionWorker = new Worker(
       host: process.env.REDIS_HOST,
       port: Number(process.env.REDIS_PORT),
     },
+    concurrency: 5,
   }
 );
 

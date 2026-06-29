@@ -40,9 +40,8 @@ export const processTransaction = async (
     throw new Error("Insufficient wallet balance.");
   }
 
-  // "Transaction" begins
+ 
   try {
-    // Deduct wallet amount
     user.walletBalance -= amount;
 
     users.set(userId, user);
@@ -62,7 +61,7 @@ export const processTransaction = async (
 
     console.log(`Transaction ${id} processed successfully.`);
   } catch (error) {
-    // Rollback (since we're using an in-memory store)
+    // Rollback
     user.walletBalance += amount;
     users.set(userId, user);
 
